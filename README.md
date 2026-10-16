@@ -35,7 +35,7 @@ Because failures are rare (~3.4% of records), the project treats this as an
 6. **Handle imbalance** — `RandomOverSampler` applied to the **training set only**,
    so validation and test still reflect the real-world failure rate.
 7. **Model & compare** — Logistic Regression (baseline), KNN, and a small neural
-   network (Keras).
+   network (Keras), all compared on the validation set.
 8. **Final evaluation** — the chosen model evaluated once on the held-out test set.
 
 ## Object-Oriented Design
@@ -54,27 +54,41 @@ interface (inheritance + polymorphism), and keeps the fitted scaler reusable on 
 
 ## Models & Results (failure class, recall-focused)
 
-All models were trained on the oversampled training set and judged mainly on how
-well they catch the rare failure class (recall). Results are reproducible
-(`random_state=42`, `tf.random.set_seed(42)`).
+All models were trained on the oversampled training set and compared on the
+validation set, judged mainly on how well they catch the rare failure class
+(recall). Results use `random_state=42` and `tf.random.set_seed(42)`.
 
-| Model | Evaluated on | Precision | Recall | F1 | Failures caught |
-|-------|--------------|-----------|--------|-----|-----------------|
-| Logistic Regression | validation | 0.15 | 0.82 | 0.26 | 56 / 68 |
-| KNN | validation | 0.36 | 0.62 | 0.45 | 42 / 68 |
-| **Neural Network** | **test** | 0.35 | **0.84** | **0.49** | **57 / 68** |
+**Validation set (model selection):**
 
-The neural network was selected for its high failure recall and evaluated once on
-the held-out test set, where it caught **57 of 68 real failures (recall 0.84)**
-while keeping false alarms far lower than logistic regression.
+| Model | Precision | Recall | F1 | Failures caught |
+|-------|-----------|--------|-----|-----------------|
+| Logistic Regression | 0.15 | 0.82 | 0.26 | 56 / 68 |
+| KNN | 0.36 | 0.62 | 0.45 | 42 / 68 |
+| **Neural Network** | **0.34** | **0.82** | **0.48** | **56 / 68** |
+
+The neural network and logistic regression tie on recall (0.82), but the neural
+network reaches it with much higher precision (0.34 vs 0.15 — far fewer false
+alarms), so it was selected.
+
+**Held-out test set (Neural Network):**
+
+| Metric (failure class) | Value |
+|------------------------|-------|
+| Recall | **0.87** (caught 59 of 68 failures) |
+| Precision | 0.39 |
+| F1 | 0.54 |
+
+On completely unseen data the model caught **59 of 68 failures**, confirming it
+generalizes rather than overfits.
 
 ## Key decision
 
 This is predictive maintenance, where a **missed failure** is far more costly than
 a **false alarm**. Recall was therefore prioritized, and the neural network was
-chosen for the highest failure recall (0.84 on the test set, missing only 11 of 68
-failures). If false alarms were the dominant cost, the higher-precision KNN would
-be preferable — the right model depends on the cost trade-off.
+chosen for the best recall-with-precision balance (0.87 recall on the test set,
+missing only 9 of 68 failures). If false alarms were the dominant cost, the
+higher-precision KNN would be preferable — the right model depends on the cost
+trade-off.
 
 ## Tech stack
 
@@ -94,7 +108,7 @@ Matplotlib, Seaborn.
 
 ## Limitations & next steps
 
-- The neural network still produces many false alarms (low precision); tuning the
+- The neural network still produces false alarms (moderate precision); tuning the
   decision threshold or trying class-weighted loss could improve the balance.
 - Only three models were compared; tree-based models (Random Forest, XGBoost)
   are common strong baselines for tabular data and would be a natural next step.
