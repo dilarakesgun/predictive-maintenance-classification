@@ -35,9 +35,9 @@ Because failures are rare (~3.4% of records), the project treats this as an
 6. **Handle imbalance** — `RandomOverSampler` applied to the **training set only**,
    so validation and test still reflect the real-world failure rate.
 7. **Model & compare** — Logistic Regression (baseline), KNN, and a small neural
-   network (Keras). Model selection on the validation set.
+   network (Keras).
 8. **Final evaluation** — the chosen model evaluated once on the held-out test set.
-   
+
 ## Object-Oriented Design
 
 The pipeline is implemented as modular, reusable classes rather than a flat script:
@@ -51,32 +51,28 @@ The pipeline is implemented as modular, reusable classes rather than a flat scri
 
 This isolates each responsibility, makes the models interchangeable through a common
 interface (inheritance + polymorphism), and keeps the fitted scaler reusable on new data.
+
 ## Models & Results (failure class, recall-focused)
 
-Validation set:
+All models were trained on the oversampled training set and judged mainly on how
+well they catch the rare failure class (recall). Results are reproducible
+(`random_state=42`, `tf.random.set_seed(42)`).
 
-| Model | Precision | Recall | F1 |
-|-------|-----------|--------|-----|
-| Logistic Regression | 0.15 | 0.82 | 0.26 |
-| KNN | 0.36 | 0.62 | 0.45 |
-| **Neural Network** | 0.31 | **0.85** | **0.46** |
+| Model | Evaluated on | Precision | Recall | F1 | Failures caught |
+|-------|--------------|-----------|--------|-----|-----------------|
+| Logistic Regression | validation | 0.15 | 0.82 | 0.26 | 56 / 68 |
+| KNN | validation | 0.36 | 0.62 | 0.45 | 42 / 68 |
+| **Neural Network** | **test** | 0.35 | **0.84** | **0.49** | **57 / 68** |
 
-Held-out **test set** (Neural Network):
-
-| Metric (failure class) | Value |
-|------------------------|-------|
-| Recall | **0.88** (caught 60 of 68 failures) |
-| Precision | 0.34 |
-| F1 | 0.49 |
-
-Test performance closely matches validation, indicating the model generalizes
-rather than overfits.
+The neural network was selected for its high failure recall and evaluated once on
+the held-out test set, where it caught **57 of 68 real failures (recall 0.84)**
+while keeping false alarms far lower than logistic regression.
 
 ## Key decision
 
 This is predictive maintenance, where a **missed failure** is far more costly than
 a **false alarm**. Recall was therefore prioritized, and the neural network was
-chosen for the highest failure recall (0.88 on test, missing only 8 of 68
+chosen for the highest failure recall (0.84 on the test set, missing only 11 of 68
 failures). If false alarms were the dominant cost, the higher-precision KNN would
 be preferable — the right model depends on the cost trade-off.
 
@@ -88,7 +84,7 @@ Matplotlib, Seaborn.
 ## Notebooks
 
 - **`MachineFailurePrediction_OOP.ipynb`** — the main, object-oriented pipeline (recommended)
-- `MachineFailurePrediction_notes.ipynb` — earlier version with detailed step-by-step learning notes
+- `MachineFailurePrediction_Notes.ipynb` — earlier version with detailed step-by-step learning notes
 
 ## How to run
 
