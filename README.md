@@ -37,7 +37,20 @@ Because failures are rare (~3.4% of records), the project treats this as an
 7. **Model & compare** — Logistic Regression (baseline), KNN, and a small neural
    network (Keras). Model selection on the validation set.
 8. **Final evaluation** — the chosen model evaluated once on the held-out test set.
+   
+## Object-Oriented Design
 
+The pipeline is implemented as modular, reusable classes rather than a flat script:
+
+| Class | Responsibility |
+|-------|----------------|
+| `DataLoader` | Load the CSV, drop identifier/leakage columns, one-hot encode `Type` |
+| `Preprocessor` | Train/validation/test split, scaling, and oversampling (fit on the training set only) |
+| `BaseModel` | Shared `train` / `predict` / `evaluate` logic |
+| `LogRegModel`, `KNNModel`, `NeuralNetModel` | Subclasses of `BaseModel`; the neural network overrides `train` and `predict` for Keras |
+
+This isolates each responsibility, makes the models interchangeable through a common
+interface (inheritance + polymorphism), and keeps the fitted scaler reusable on new data.
 ## Models & Results (failure class, recall-focused)
 
 Validation set:
@@ -72,10 +85,15 @@ be preferable — the right model depends on the cost trade-off.
 Python, pandas, NumPy, scikit-learn, imbalanced-learn, TensorFlow/Keras,
 Matplotlib, Seaborn.
 
+## Notebooks
+
+- **`MachineFailurePrediction_OOP.ipynb`** — the main, object-oriented pipeline (recommended)
+- `MachineFailurePrediction_notes.ipynb` — earlier version with detailed step-by-step learning notes
+
 ## How to run
 
-1. Download `ai4i2020.csv` from the UCI link above.
-2. Open the notebook (Google Colab or Jupyter) and upload the CSV.
+1. Download `ai4i2020.csv` from the UCI link above (or use the copy in this repo).
+2. Open `MachineFailurePrediction_OOP.ipynb` in Google Colab or Jupyter.
 3. Run the cells top to bottom.
 
 ## Limitations & next steps
